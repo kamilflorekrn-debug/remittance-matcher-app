@@ -1,0 +1,83 @@
+GETINGE - REMITTANCE ADVICE MATCHER
+===================================
+
+Author
+------
+Kamil Florek
+
+License
+-------
+This application is open-source and can be extended internally for local process needs.
+
+Purpose
+-------
+The app automates matching Remittance Advice files to FEBAN transactions:
+1. read `transactions.csv`,
+2. scan Outlook mailboxes,
+3. extract text from PDF attachments via Word COM,
+4. score and validate candidates,
+5. save matched remittances to date folders,
+6. log progress and results.
+
+Requirements
+------------
+- Windows 10/11
+- Outlook Desktop (COM) with configured mailbox profile
+- Word Desktop (COM) for PDF text extraction
+- Access to the shared folders used by CSV and remittance output
+
+No API keys are required.
+
+Main Window
+-----------
+- Lookback days: how many days back emails are scanned.
+- Language: UI language switch.
+- Settings: operational setup.
+- Load settings: import JSON profile.
+- Save settings as: export JSON profile.
+- Start / Stop: run control.
+- Live log: runtime events and status.
+
+Settings Window
+---------------
+Paths
+- FEBAN CSV folder: folder containing `transactions.csv`.
+- FEBAN CSV filename: transaction filename.
+- Remittance output folder: base output folder (date subfolders are auto-created).
+
+Work mode
+- Pass #2: additional matching using Subject + Body + PDF context.
+- Pass #3: save `.msg` when no PDF is present but body indicates remittance.
+- Cache processed PDFs: skips already processed PDFs from lookback window.
+- Max PDF size (MB): hard size limit; only PDFs <= limit are processed.
+- Refresh UI every N emails: progress/log refresh cadence.
+
+Mailboxes (ROOT + Inbox subfolders)
+- If ROOT has subfolders configured, only those subfolders are scanned.
+- If ROOT has no subfolders configured, full Inbox for that ROOT is scanned.
+
+Advanced Settings (Developer)
+-----------------------------
+These options tune precision/recall and false-match protection.
+
+- Minimum score to save: base acceptance threshold.
+- Minimum margin: difference between top candidate and runner-up.
+- Require hard signal or 2 signals: safety requirement.
+- Require TOTAL/PAID context: protects against line-item matches.
+- Invoice regex: invoice number pattern (default: 3129xxxxx).
+- Invoice context window (lines): lines scanned around amount for invoice context.
+- Single-invoice score/margin bonus: exception logic for true one-invoice remittances.
+- TOTAL context window (chars): text span around keyword for amount capture.
+- Neighbor lines (STRONG TOTAL / TOTAL keyword): line proximity search width.
+- Loose digit match + minimum digits: fallback for OCR formatting issues.
+- Scoring weights: STRONG TOTAL / TOTAL context / keyword window.
+- Invoice-near-amount penalty: negative score for likely line-item amounts.
+- Prefer hard total over higher score: prioritize strong total signal.
+- Block invoice context without strong total: strongest line-item false-match protection.
+- STRONG TOTAL keywords / TOTAL keywords: keyword lists (one per line).
+
+Storage behavior
+----------------
+- Local settings are auto-saved to LocalAppData.
+- "Save settings as..." is an optional profile export.
+- Processed PDF cache is stored near the CSV file and trimmed to lookback range.

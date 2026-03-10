@@ -1,0 +1,241 @@
+<Window x:Class="RemittanceMatcherApp.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Ustawienia"
+        Height="760" Width="1220" MinHeight="660" MinWidth="980"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        FontFamily="Segoe UI" FontSize="13"
+        Background="#EEF2F6">
+    <Window.Resources>
+        <SolidColorBrush x:Key="CardBrush" Color="#FFFFFF"/>
+
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="MinHeight" Value="38"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="InfoButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="24"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="6,0,0,0"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Background" Value="#DCEBFF"/>
+            <Setter Property="BorderBrush" Value="#7AA2E3"/>
+            <Setter Property="Content" Value="i"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="ToolTipService.InitialShowDelay" Value="120"/>
+            <Setter Property="ToolTipService.ShowDuration" Value="60000"/>
+            <Setter Property="ToolTipService.Placement" Value="Mouse"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Background="{StaticResource CardBrush}" BorderBrush="#D1D5DB" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,10">
+            <Grid>
+                <TextBlock Name="CenterHeaderText"
+                           Text="GETINGE - REMITTANCE ADVICE MATCHER"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           FontWeight="SemiBold"
+                           FontSize="15"/>
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.3*"/>
+                    <ColumnDefinition Width="1*"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Background="{StaticResource CardBrush}" BorderBrush="#D1D5DB" BorderThickness="1" CornerRadius="6" Padding="12" Margin="0,0,10,0">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Name="PathsHeaderText" Grid.Row="0" Text="Ścieżki i tryb pracy" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,10"/>
+
+                        <Grid Grid.Row="1" Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="250"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Name="FebanFolderLabel" Grid.Row="0" Grid.Column="0" Text="Folder CSV FEBAN" VerticalAlignment="Center"/>
+                            <TextBox Grid.Row="0" Grid.Column="1" Name="FebanFolderBox" Margin="8,0,0,6"/>
+                            <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource InfoButtonStyle}">
+                                <Button.ToolTip>
+                                    <TextBlock Name="FebanFolderInfoText" Width="360" TextWrapping="Wrap"/>
+                                </Button.ToolTip>
+                            </Button>
+
+                            <TextBlock Name="FebanFileLabel" Grid.Row="1" Grid.Column="0" Text="Nazwa pliku CSV" VerticalAlignment="Center"/>
+                            <TextBox Grid.Row="1" Grid.Column="1" Name="FebanFileBox" Margin="8,0,0,6"/>
+                            <Button Grid.Row="1" Grid.Column="2" Style="{StaticResource InfoButtonStyle}">
+                                <Button.ToolTip>
+                                    <TextBlock Name="FebanFileInfoText" Width="360" TextWrapping="Wrap"/>
+                                </Button.ToolTip>
+                            </Button>
+
+                            <TextBlock Name="RemitBaseLabel" Grid.Row="2" Grid.Column="0" Text="Folder zapisu remitek" VerticalAlignment="Center"/>
+                            <TextBox Grid.Row="2" Grid.Column="1" Name="RemitBaseFolderBox" Margin="8,0,0,0"/>
+                            <Button Grid.Row="2" Grid.Column="2" Style="{StaticResource InfoButtonStyle}">
+                                <Button.ToolTip>
+                                    <TextBlock Name="RemitBaseInfoText" Width="360" TextWrapping="Wrap"/>
+                                </Button.ToolTip>
+                            </Button>
+                        </Grid>
+
+                        <Border Grid.Row="2" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="6" Padding="10">
+                            <StackPanel>
+                                <TextBlock Name="ModeHeaderText" Text="Tryb pracy" FontWeight="SemiBold" Margin="0,0,0,10"/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <CheckBox Name="EnablePass2Box" Content="Pass #2: łącz mail + PDF" VerticalAlignment="Center"/>
+                                    <Button Style="{StaticResource InfoButtonStyle}">
+                                        <Button.ToolTip>
+                                            <TextBlock Name="Pass2InfoText" Width="360" TextWrapping="Wrap"/>
+                                        </Button.ToolTip>
+                                    </Button>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <CheckBox Name="EnablePass3Box" Content="Pass #3: zapis maila .msg (bez PDF)" VerticalAlignment="Center"/>
+                                    <Button Style="{StaticResource InfoButtonStyle}">
+                                        <Button.ToolTip>
+                                            <TextBlock Name="Pass3InfoText" Width="360" TextWrapping="Wrap"/>
+                                        </Button.ToolTip>
+                                    </Button>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                    <CheckBox Name="EnableCacheBox" Content="Cache: pomijaj już sprawdzone PDF" VerticalAlignment="Center"/>
+                                    <Button Style="{StaticResource InfoButtonStyle}">
+                                        <Button.ToolTip>
+                                            <TextBlock Name="CacheInfoText" Width="360" TextWrapping="Wrap"/>
+                                        </Button.ToolTip>
+                                    </Button>
+                                </StackPanel>
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="260"/>
+                                        <ColumnDefinition Width="120"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Name="MaxPdfLabel" Grid.Row="0" Grid.Column="0" Text="Maksymalny rozmiar PDF (MB)" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Row="0" Grid.Column="1" Name="MaxPdfSizeBox" Margin="8,0,0,6"/>
+                                    <Button Grid.Row="0" Grid.Column="2" Style="{StaticResource InfoButtonStyle}" Margin="6,0,0,6">
+                                        <Button.ToolTip>
+                                            <TextBlock Name="MaxPdfInfoText" Width="360" TextWrapping="Wrap"/>
+                                        </Button.ToolTip>
+                                    </Button>
+
+                                    <TextBlock Name="UiRefreshLabel" Grid.Row="1" Grid.Column="0" Text="Odśwież UI co N maili" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Row="1" Grid.Column="1" Name="DoEventsEveryBox" Margin="8,0,0,0"/>
+                                    <Button Grid.Row="1" Grid.Column="2" Style="{StaticResource InfoButtonStyle}">
+                                        <Button.ToolTip>
+                                            <TextBlock Name="UiRefreshInfoText" Width="360" TextWrapping="Wrap"/>
+                                        </Button.ToolTip>
+                                    </Button>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Column="1" Background="{StaticResource CardBrush}" BorderBrush="#D1D5DB" BorderThickness="1" CornerRadius="6" Padding="12">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="0,0,0,10">
+                            <TextBlock Name="MailboxesHeaderText" Text="Skrzynki Outlook (ROOT + podfoldery Inbox)" FontWeight="SemiBold" FontSize="15" VerticalAlignment="Center"/>
+                            <Button Style="{StaticResource InfoButtonStyle}">
+                                <Button.ToolTip>
+                                    <TextBlock Name="MailboxesInfoText" Width="360" TextWrapping="Wrap"/>
+                                </Button.ToolTip>
+                            </Button>
+                        </StackPanel>
+
+                        <Grid Grid.Row="1" Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox Grid.Column="0" Name="RootNameBox"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="8,0,0,0">
+                                <Button Name="AddRootButton" Content="Dodaj ROOT" Click="AddRootButton_Click" Width="120"/>
+                                <Button Name="RemoveRootButton" Content="Usuń ROOT" Click="RemoveRootButton_Click" Width="120"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <GroupBox Name="RootsGroupBox" Grid.Row="2" Header="Skrzynki ROOT" Margin="0,0,0,10">
+                            <ListBox Name="MailboxRootsListBox" SelectionChanged="MailboxRootsListBox_SelectionChanged" DisplayMemberPath="RootName"/>
+                        </GroupBox>
+
+                        <Grid Grid.Row="3" Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox Grid.Column="0" Name="SubfolderNameBox"/>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="8,0,0,0">
+                                <Button Name="AddSubfolderButton" Content="Dodaj podfolder" Click="AddSubfolderButton_Click" Width="140"/>
+                                <Button Name="RemoveSubfolderButton" Content="Usuń podfolder" Click="RemoveSubfolderButton_Click" Width="140"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <GroupBox Name="SubfoldersGroupBox" Grid.Row="4" Header="Podfoldery Inbox dla wybranego ROOT">
+                            <ListBox Name="SubfoldersListBox"/>
+                        </GroupBox>
+                    </Grid>
+                </Border>
+            </Grid>
+        </ScrollViewer>
+
+        <DockPanel Grid.Row="2" Margin="0,10,0,0" LastChildFill="False">
+            <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                <Button Name="AdvancedSettingsButton" Content="Ustawienia zaawansowane" Width="240" Click="AdvancedSettingsButton_Click"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+                <Button Name="CancelButton" Content="Anuluj" Width="130" Click="CancelButton_Click"/>
+                <Button Name="ApplyButton" Content="Zastosuj" Width="130" Click="ApplyButton_Click" Background="#0B7285" Foreground="White"/>
+            </StackPanel>
+        </DockPanel>
+    </Grid>
+</Window>

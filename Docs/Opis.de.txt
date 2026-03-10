@@ -1,0 +1,81 @@
+GETINGE - REMITTANCE ADVICE MATCHER
+===================================
+
+Autor
+-----
+Kamil Florek
+
+Lizenz
+-------
+Diese Anwendung ist Open Source und kann intern fuer Prozessanforderungen erweitert werden.
+
+Ziel
+----
+Die Anwendung automatisiert das Matching von Remittance Advice mit FEBAN-Transaktionen:
+1. `transactions.csv` einlesen,
+2. Outlook-Postfaecher durchsuchen,
+3. PDF-Text ueber Word COM extrahieren,
+4. Kandidaten scoren und validieren,
+5. Remittances in Datumsordner speichern,
+6. Live-Logging anzeigen.
+
+Voraussetzungen
+---------------
+- Windows 10/11
+- Outlook Desktop (COM) mit konfiguriertem Profil
+- Word Desktop (COM) fuer PDF-Extraktion
+- Zugriff auf Netzwerkpfade fuer CSV und Ausgabeordner
+
+Es werden keine API-Schluessel benoetigt.
+
+Hauptfenster
+------------
+- Rueckblicktage: Suchzeitraum in Tagen.
+- Sprache: UI-Sprache.
+- Einstellungen: oeffnet Betriebsoptionen.
+- Einstellungen laden: JSON-Profil importieren.
+- Einstellungen speichern unter: JSON-Profil exportieren.
+- Start / Stop: Prozesssteuerung.
+- Live-Log: Status und Ereignisse.
+
+Einstellungen
+-------------
+Pfade
+- FEBAN CSV-Ordner: Ordner mit `transactions.csv`.
+- FEBAN CSV-Dateiname: Name der Transaktionsdatei.
+- Remittance-Ausgabeordner: Basisordner, Datumsunterordner werden automatisch erstellt.
+
+Arbeitsmodus
+- Pass #2: Subject + Body + PDF kombinieren.
+- Pass #3: `.msg` speichern, wenn kein PDF vorhanden ist.
+- Verarbeitete PDFs cachen.
+- Max. PDF-Groesse (MB): harter Grenzwert, nur PDFs <= Limit.
+- UI alle N Mails aktualisieren.
+
+Outlook-Postfaecher
+- ROOT mit Unterordnern: nur diese Unterordner werden gescannt.
+- ROOT ohne Unterordner: kompletter Inbox des ROOT wird gescannt.
+
+Erweiterte Einstellungen
+------------------------
+Steuern Treffergenauigkeit und Schutz gegen Fehlzuordnungen.
+- Mindestscore, Mindestabstand,
+- hard signal / 2 Signale,
+- TOTAL/PAID-Kontext,
+- Rechnungs-Regex,
+- Rechnungs-Kontextfenster,
+- Single-Invoice-Boni,
+- TOTAL-Kontextfenster,
+- Nachbarzeilen,
+- lockerer Ziffern-Match,
+- Score-Gewichte,
+- Strafe bei Rechnungs-Kontext,
+- hard total bevorzugen,
+- Rechnungs-Kontext ohne hard total blockieren,
+- STRONG TOTAL / TOTAL-Keywordlisten.
+
+Speicherverhalten
+-----------------
+- Lokale Einstellungen werden automatisch in LocalAppData gespeichert.
+- "Speichern unter" ist nur ein zusaetzlicher Export.
+- PDF-Cache liegt neben der CSV und wird gemaess Lookback bereinigt.

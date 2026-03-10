@@ -1,0 +1,81 @@
+GETINGE - REMITTANCE ADVICE MATCHER
+===================================
+
+Auteur
+------
+Kamil Florek
+
+Licence
+-------
+Cette application est open-source et peut etre etendue en interne selon les besoins du processus.
+
+Objectif
+--------
+L'application automatise l'association des Remittance Advice aux transactions FEBAN :
+1. lecture de `transactions.csv`,
+2. analyse des boites Outlook,
+3. extraction du texte PDF via Word COM,
+4. scoring et validation des candidats,
+5. sauvegarde des remittances dans des dossiers date,
+6. journalisation en direct.
+
+Pre-requis
+----------
+- Windows 10/11
+- Outlook Desktop (COM) avec profil configure
+- Word Desktop (COM) pour l'extraction texte PDF
+- Acces aux chemins reseau (CSV et dossier de sortie)
+
+Aucune cle API n'est necessaire.
+
+Fenetre principale
+------------------
+- Jours de recherche : nombre de jours en arriere.
+- Langue : changement de langue UI.
+- Parametres : ouvre la configuration.
+- Charger parametres : importe un profil JSON.
+- Enregistrer sous : exporte un profil JSON.
+- Demarrer / Arreter : controle du traitement.
+- Journal en direct : etat et evenements.
+
+Parametres
+----------
+Chemins
+- Dossier CSV FEBAN : dossier contenant `transactions.csv`.
+- Nom du fichier CSV : nom du fichier transactions.
+- Dossier de sortie : dossier racine (sous-dossiers dates crees automatiquement).
+
+Mode de travail
+- Pass #2 : combine Subject + Body + PDF.
+- Pass #3 : enregistre `.msg` si pas de PDF mais contenu pertinent.
+- Cache PDF : ignore les PDF deja traites.
+- Taille max PDF (MB) : limite stricte ; seuls les PDF <= limite sont analyses.
+- Rafraichir UI tous les N emails : frequence d'actualisation.
+
+Boites Outlook
+- ROOT avec sous-dossiers : seuls ces sous-dossiers sont analyses.
+- ROOT sans sous-dossiers : Inbox complet du ROOT.
+
+Parametres avances
+------------------
+Reglent precision, rappel et protection contre les faux matches.
+- score minimum, marge minimum,
+- hard signal / 2 signaux,
+- contexte TOTAL/PAID,
+- regex facture,
+- fenetre de contexte facture,
+- bonus single-invoice,
+- fenetre TOTAL,
+- lignes voisines,
+- loose digits match,
+- poids de score,
+- penalite facture proche du montant,
+- preference hard total,
+- blocage contexte facture sans hard total,
+- listes de mots-cles STRONG TOTAL et TOTAL.
+
+Sauvegarde
+----------
+- Les parametres locaux sont sauvegardes automatiquement dans LocalAppData.
+- "Enregistrer sous" est un export optionnel.
+- Le cache PDF est stocke pres du CSV et nettoye selon le lookback.

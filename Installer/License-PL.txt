@@ -1,0 +1,27 @@
+GETINGE - REMITTANCE ADVICE MATCHER
+Warunki użytkowania i instalacji
+
+1. Informacje ogólne
+Ta aplikacja została stworzona na potrzeby automatyzacji procesu OtC (Order-to-Cash) dla GETINGE.
+Autorem aplikacji jest Kamil Florek.
+
+2. Model licencyjny
+Aplikacja jest udostępniona jako open-source.
+Open-source oznacza możliwość wglądu i rozwoju kodu, jednak korzystanie z aplikacji w środowisku firmowym
+po modyfikacji kodu wymaga uprzedniej zgody autora.
+
+3. Zasady użycia
+- Użytkownik końcowy może korzystać z aplikacji zgodnie z przeznaczeniem biznesowym.
+- Zabronione jest wykorzystywanie aplikacji w sposób naruszający polityki bezpieczeństwa firmy.
+- Po zmianie kodu i przed użyciem zmodyfikowanej wersji w firmie należy uzyskać zgodę autora.
+
+4. Odpowiedzialność
+Autor dostarcza aplikację w dobrej wierze, bez gwarancji pełnej bezbłędności we wszystkich środowiskach.
+Użytkownik odpowiada za poprawność konfiguracji, danych wejściowych i sposób użycia.
+
+5. Prywatność i dane
+Aplikacja operuje na danych lokalnych i zasobach użytkownika (np. Outlook/Word/CSV) zgodnie z konfiguracją.
+Użytkownik odpowiada za zgodność użycia z wewnętrznymi politykami i przepisami.
+
+6. Akceptacja
+Instalując aplikację potwierdzasz, że zapoznałeś(-aś) się z powyższymi warunkami i akceptujesz ich treść.

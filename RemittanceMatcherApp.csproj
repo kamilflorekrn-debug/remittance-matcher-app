@@ -1,0 +1,78 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon>Assets\getingeremittanceikomn.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Tools\**\*.cs" />
+    <Content Include="Assets\getingeremittanceikomn.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      <TargetPath>getingeremittanceikomn.ico</TargetPath>
+    </Content>
+    <Content Include="Assets\getingeremittanceikomn.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      <TargetPath>getingeremittanceikomn.png</TargetPath>
+    </Content>
+    <Content Include="Opis.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      <TargetPath>Opis.txt</TargetPath>
+    </Content>
+    <Content Include="Docs\Opis.pl.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      <TargetPath>Opis.pl.txt</TargetPath>
+    </Content>
+    <Content Include="Docs\Opis.en.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      <TargetPath>Opis.en.txt</TargetPath>
+    </Content>
+    <Content Include="Docs\Opis.es.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      <TargetPath>Opis.es.txt</TargetPath>
+    </Content>
+    <Content Include="Docs\Opis.fr.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      <TargetPath>Opis.fr.txt</TargetPath>
+    </Content>
+    <Content Include="Docs\Opis.de.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      <TargetPath>Opis.de.txt</TargetPath>
+    </Content>
+    <Content Include="settings.default.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      <TargetPath>settings.default.json</TargetPath>
+    </Content>
+    <Content Include="Installer\Install-RemittanceMatcher.ps1">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      <TargetPath>Install-RemittanceMatcher.ps1</TargetPath>
+    </Content>
+    <Content Include="Installer\Uninstall-RemittanceMatcher.ps1">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+      <TargetPath>Uninstall-RemittanceMatcher.ps1</TargetPath>
+    </Content>
+  </ItemGroup>
+
+  <Target Name="PublishUninstallHelper" AfterTargets="Publish">
+    <Exec Command="dotnet publish &quot;$(MSBuildProjectDirectory)\Tools\RemittanceUninstaller\RemittanceUninstaller.csproj&quot; -c $(Configuration) -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o &quot;$(PublishDir)uninstall_helper&quot;" />
+    <Copy SourceFiles="$(PublishDir)uninstall_helper\RemittanceUninstaller.exe"
+          DestinationFiles="$(PublishDir)GetingeRemittanceUninstall.exe" />
+    <RemoveDir Directories="$(PublishDir)uninstall_helper" />
+  </Target>
+
+</Project>

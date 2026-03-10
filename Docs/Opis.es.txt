@@ -1,0 +1,81 @@
+GETINGE - REMITTANCE ADVICE MATCHER
+===================================
+
+Autor
+-----
+Kamil Florek
+
+Licencia
+--------
+Esta aplicación es open-source y puede ampliarse internamente para las necesidades del proceso.
+
+Objetivo
+--------
+La aplicación automatiza la vinculación de Remittance Advice con transacciones FEBAN:
+1. lee `transactions.csv`,
+2. analiza buzones de Outlook,
+3. extrae texto de PDF mediante Word COM,
+4. calcula puntuación y valida candidatos,
+5. guarda remittances en carpetas por fecha,
+6. muestra progreso y resultados en el log.
+
+Requisitos
+----------
+- Windows 10/11
+- Outlook Desktop (COM) con perfil configurado
+- Word Desktop (COM) para extraer texto de PDF
+- Acceso a rutas compartidas (CSV y carpeta de salida)
+
+No se necesitan claves API.
+
+Ventana principal
+-----------------
+- Días de búsqueda: rango de días hacia atrás.
+- Idioma: cambio de idioma de la interfaz.
+- Configuración: abre opciones operativas.
+- Cargar configuración: importa perfil JSON.
+- Guardar configuración como: exporta perfil JSON.
+- Iniciar / Detener: control del proceso.
+- Log en vivo: estado y eventos.
+
+Configuración
+-------------
+Rutas
+- Carpeta CSV FEBAN: carpeta con `transactions.csv`.
+- Nombre de CSV: nombre del archivo de transacciones.
+- Carpeta de salida: carpeta base (subcarpetas de fecha se crean automáticamente).
+
+Modo de trabajo
+- Pass #2: combinación Subject + Body + PDF.
+- Pass #3: guardar `.msg` si no hay PDF pero el correo parece remittance.
+- Cache de PDF procesados: omite PDF ya procesados en el rango lookback.
+- Tamaño máximo PDF (MB): límite estricto; solo PDFs <= límite.
+- Refresco UI cada N correos: frecuencia de actualización de progreso/log.
+
+Buzones
+- Si ROOT tiene subcarpetas, solo se escanean esas subcarpetas.
+- Si ROOT no tiene subcarpetas, se escanea todo el Inbox del ROOT.
+
+Configuración avanzada
+----------------------
+Ajusta precisión y protección contra falsos positivos.
+- Umbral mínimo de score.
+- Margen mínimo frente al segundo candidato.
+- Requerir señal fuerte o 2 señales.
+- Requerir contexto TOTAL/PAID.
+- Regex de factura (p. ej. 3129xxxxx).
+- Ventana de contexto de factura (líneas).
+- Bonos para caso de una sola factura.
+- Ventana de contexto TOTAL (caracteres).
+- Líneas vecinas para STRONG TOTAL / TOTAL.
+- Coincidencia flexible por dígitos y mínimo de dígitos.
+- Pesos de score y penalización por factura cerca de importe.
+- Preferir hard total sobre score más alto.
+- Bloquear contexto de factura sin hard total.
+- Listas de palabras clave STRONG TOTAL y TOTAL.
+
+Persistencia
+------------
+- La configuración local se guarda automáticamente en LocalAppData.
+- "Guardar configuración como..." es solo exportación opcional.
+- El cache PDF se guarda cerca del CSV y se limpia según lookback.

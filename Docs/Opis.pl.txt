@@ -1,0 +1,289 @@
+GETINGE - REMITTANCE ADVICE MATCHER
+===================================
+
+Autor
+-----
+Kamil Florek
+
+Licencja i model projektu
+-------------------------
+Aplikacja jest narzędziem open-source do automatycznego dopasowywania Remittance Advice do transakcji FEBAN.
+Kod może być rozwijany wewnętrznie przez kolejne osoby (np. IT/Finance), bez konieczności przepisywania logiki od zera.
+
+Cel aplikacji
+-------------
+Celem aplikacji jest ograniczenie ręcznej pracy i błędów przy codziennym procesie:
+1. odczyt transakcji z pliku transactions.csv,
+2. przeszukanie skrzynek Outlook,
+3. analiza treści maili i załączników PDF,
+4. wybór najlepszego dopasowania do transakcji,
+5. zapis remittance do odpowiedniego folderu daty,
+6. logowanie całego procesu.
+
+Wymagania środowiskowe
+----------------------
+1. Windows 10/11.
+2. Microsoft Outlook (desktop, klasyczny COM) z zalogowanym profilem pocztowym.
+3. Microsoft Word (desktop), ponieważ Word COM jest używany do odczytu tekstu z PDF.
+4. Dostęp do ścieżek sieciowych, gdzie znajdują się CSV i folder zapisu remitek.
+
+Ważne: nie potrzeba żadnych API key ani tokenów.
+
+Jak działa proces (pełen przebieg)
+----------------------------------
+1. Aplikacja wczytuje ustawienia lokalne (LocalAppData\RemittanceMatcherApp\settings.json).
+2. Ustala zakres dat na podstawie "Zakres dni wstecz".
+3. Łączy się z Outlook COM i pobiera maile z wybranych skrzynek/folderów.
+4. Dla każdego maila:
+   - wykrywa załączniki PDF,
+   - filtruje PDF po limicie rozmiaru MB,
+   - odczytuje tekst PDF przez Word COM,
+   - oblicza scoring kandydatów względem kwot z FEBAN,
+   - stosuje warunki bezpieczeństwa (TOTAL/PAID, line-item penalty, margines).
+5. Po pozytywnym dopasowaniu:
+   - zapisuje plik do folderu daty (tworzy foldery automatycznie, jeśli brak),
+   - usuwa dopasowaną transakcję z puli,
+   - aktualizuje cache przetworzonych PDF.
+6. Jeśli ustawione:
+   - Pass #2: dodatkowa próba dopasowania (Subject + Body + PDF),
+   - Pass #3: zapis .msg, gdy PDF brak, ale treść wskazuje na remittance.
+7. Na końcu loguje statystyki, błędy i czas wykonania.
+
+Co robi cache PDF
+-----------------
+Cache zapisuje identyfikatory/fingerprinty PDF już sprawdzonych w ostatnich dniach.
+Efekt:
+- przy kolejnym uruchomieniu aplikacja nie otwiera ponownie tych samych PDF,
+- proces działa szybciej,
+- spada obciążenie Outlook/Word.
+
+Miejsce cache:
+- cache jest przechowywany obok transactions.csv (dokładnie tam, gdzie wymaga proces).
+
+Okno główne - szczegółowy opis opcji
+------------------------------------
+1) Zakres dni wstecz
+Co to jest:
+- liczba dni wstecz do przeszukania poczty.
+Przykład:
+- 7 = dzisiaj + poprzednie 7 dni.
+Skutek zwiększenia:
+- większy zakres danych,
+- dłuższy czas działania,
+- większa szansa znalezienia zaległych remitek.
+
+2) Język
+Co to jest:
+- język interfejsu aplikacji.
+Dostępne:
+- polski, angielski, hiszpański, francuski, niemiecki.
+Skutek:
+- zmienia wyłącznie teksty UI (nie zmienia logiki matchowania).
+
+3) Ustawienia
+Co to jest:
+- otwiera okno konfiguracji operacyjnej.
+Skutek:
+- możesz zmienić ścieżki, skrzynki, tryby pracy, limity.
+
+4) Wczytaj ustawienia...
+Co to jest:
+- import konfiguracji z pliku JSON.
+Kiedy używać:
+- gdy masz profile dla różnych krajów/procesów.
+
+5) Zapisz ustawienia jako...
+Co to jest:
+- eksport bieżących ustawień do pliku JSON.
+Ważne:
+- to dodatek (kopie/profilowanie), a nie jedyna metoda zapisu.
+
+6) Start
+Co to jest:
+- uruchamia pełny proces skanowania i dopasowania.
+
+7) Stop
+Co to jest:
+- bezpiecznie przerywa proces.
+Skutek:
+- aplikacja kończy aktualny krok i wychodzi z run.
+
+8) Opis
+Co to jest:
+- otwiera ten dokument z pełną dokumentacją.
+
+Ustawienia - szczegółowy opis
+-----------------------------
+Sekcja: Ścieżki
+1. Folder CSV FEBAN
+- Ścieżka do katalogu zawierającego transactions.csv.
+- Jeśli błędna: start procesu zakończy się błędem.
+
+2. Nazwa pliku CSV
+- Domyślnie: transactions.csv.
+- Zmieniasz tylko wtedy, gdy plik ma inną nazwę.
+
+3. Folder zapisu remitek
+- Główny katalog docelowy.
+- Aplikacja sama tworzy strukturę folderów po dacie transakcji.
+
+Sekcja: Tryb pracy
+1. Pass #2: łącz mail + PDF
+- Drugi etap dopasowania, gdy standardowy wynik jest niejednoznaczny.
+- Zwiększa skuteczność, ale wydłuża czas.
+
+2. Pass #3: zapis maila .msg (bez PDF)
+- Umożliwia zapis maila jako .msg, jeśli brak PDF, ale treść ma sygnał remittance.
+
+3. Cache: pomijaj już sprawdzone PDF
+- Pomija PDF już ocenione w aktywnym oknie lookback.
+- Silnie przyspiesza codzienne uruchomienia.
+
+4. Maksymalny rozmiar PDF (MB)
+- To twardy limit rozmiaru pojedynczego PDF.
+- Przykład: 15 oznacza, że aplikacja weźmie pod uwagę tylko PDF do 15 MB włącznie.
+- Plik 15.01 MB zostanie pominięty.
+- Zwiększaj tylko wtedy, gdy realnie dostajesz większe remitki.
+
+5. Odśwież UI co N maili
+- Jak często aktualizować pasek postępu i log.
+- Niskie N = bardziej płynny podgląd, ale minimalnie większy narzut.
+
+Sekcja: Skrzynki Outlook
+Model ROOT + podfoldery Inbox:
+1. Dodajesz ROOT (np. ukremittance).
+2. Dla ROOT możesz dodać listę podfolderów Inbox.
+
+Zasady działania:
+- jeśli ROOT ma podfoldery: skanowane są tylko te podfoldery,
+- jeśli ROOT nie ma podfolderów: skanowany jest cały Inbox tego ROOT.
+
+Ustawienia zaawansowane - bardzo szczegółowo
+--------------------------------------------
+UWAGA:
+Ta sekcja wpływa bezpośrednio na jakość dopasowania.
+Zmieniaj pojedyncze wartości i testuj na kontrolnej próbce danych.
+
+1) Minimalny score do zapisu
+- Główny próg jakości.
+- Kandydat poniżej progu nie zostanie zapisany.
+- Wyższa wartość: mniej zapisów, wyższa pewność.
+Przykład:
+- 120 (standard),
+- 150 (bardziej restrykcyjnie),
+- 90 (bardziej liberalnie).
+
+2) Minimalna przewaga (margin)
+- Minimalna różnica punktów między najlepszym i drugim kandydatem.
+- Chroni przed dopasowaniami "na styk".
+Przykład:
+- margin 45: kandydat 160 vs 118 przejdzie, 160 vs 130 może zostać odrzucony.
+
+3) Wymagaj hard signal lub 2 sygnały
+- Kandydat musi mieć mocny sygnał lub kombinację kilku sygnałów.
+- Silnie ogranicza losowe dopasowania tylko po samej kwocie.
+
+4) Wymagaj kontekstu TOTAL/PAID
+- Kwota musi wystąpić w kontekście sumy płatności.
+- Kluczowa ochrona przed złapaniem pojedynczej pozycji faktury.
+
+5) Regex numeru faktury
+- Wzorzec wykrywania numeru faktury (dla Ciebie: 3129xxxxx).
+- Domyślnie: \b3129\d{5}\b
+- Jeśli regex jest zły, algorytm gorzej rozróżnia line-item vs total.
+
+6) Szerokość bloku faktury (linie)
+- Ile linii wokół kwoty sprawdzać pod kątem numeru faktury.
+- Większa wartość = bardziej agresywne wykrywanie kontekstu faktury.
+
+7) Bonus score (single invoice)
+- Dodatkowy próg dla wyjątku: jedna faktura.
+- Pomaga obsłużyć przypadki "invoice number + kwota".
+
+8) Bonus margin (single invoice)
+- Dodatkowa przewaga punktowa wymagana dla wyjątku jednej faktury.
+- Gdy rośnie liczba false-match w wyjątkach, zwiększ tę wartość.
+
+9) Okno kontekstu TOTAL (znaki)
+- Długość fragmentu tekstu analizowanego wokół słów TOTAL/PAID.
+- Za małe: można nie złapać właściwej kwoty.
+- Za duże: więcej szumu i kandydatów pobocznych.
+
+10) Linie sąsiedztwa: STRONG TOTAL
+- Ile linii wokół "mocnych" słów (np. GRAND TOTAL) sprawdzać.
+- Wzrost tej wartości zwiększa tolerancję na różne formaty PDF.
+
+11) Linie sąsiedztwa: TOTAL keyword
+- Analogicznie do pkt 10, ale dla zwykłych słów TOTAL/PAID.
+
+12) Dopuść luźny match cyfr
+- Pozwala dopasować kwotę po samym ciągu cyfr (bez separatorów).
+- Plus: pomaga przy słabym OCR.
+- Minus: może zwiększyć ryzyko przypadkowego trafienia.
+
+13) Min. cyfr przy luźnym match
+- Minimalna liczba cyfr, aby dopuścić luźny match.
+- Im wyżej, tym bezpieczniej, ale mniej dopasowań przejdzie.
+
+14) Waga score: STRONG TOTAL
+- Liczba punktów za bardzo mocny sygnał sumy płatności.
+- Podniesienie tej wagi kieruje wybór na kandydatów przy GRAND TOTAL.
+
+15) Waga score: TOTAL context
+- Punkty za kontekst TOTAL/PAID.
+- Ustala, jak mocno zwykły kontekst wpływa na wynik.
+
+16) Waga score: Keyword window
+- Punkty za znalezienie kwoty w oknie słowa kluczowego.
+- Parametr równoważy moc ogólnych słów kluczowych.
+
+17) Kara score: invoice near amount
+- Ujemne punkty, gdy kwota wygląda jak pozycja faktury (line item).
+- To krytyczna ochrona przed błędem: zapisanie kwoty faktury zamiast sumy.
+Przykład:
+- -90 (standard),
+- -130 (mocniej karze line-item, bezpieczniej),
+- -50 (bardziej liberalnie).
+
+18) Preferuj hard total nad wyższym score
+- Jeśli jeden kandydat ma twardy sygnał TOTAL, może wygrać nawet przy trochę niższym score.
+- Pomaga preferować "jakość sygnału" nad samą liczbą punktów.
+
+19) Blokuj invoice context bez strong total
+- Najostrzejsza blokada na przypadki line-item.
+- Dla Twojego scenariusza (wiele faktur + jedna suma) to jedna z najważniejszych opcji bezpieczeństwa.
+
+20) Słowa kluczowe STRONG TOTAL (jedno w linii)
+- Lista fraz bardzo mocno wskazujących kwotę końcową.
+- Każda linia to osobna fraza.
+Przykłady:
+- grand total
+- amount paid to account
+- payment by bacs
+
+21) Słowa kluczowe TOTAL (jedno w linii)
+- Lista dodatkowych fraz kontekstowych.
+- Działa szerzej niż STRONG TOTAL.
+
+Zasady pracy i rekomendacje strojenia
+-------------------------------------
+1. Utrzymuj domyślne ustawienia jako punkt bazowy.
+2. Zmieniaj jednocześnie maksymalnie 1-2 parametry.
+3. Testuj na stałej próbce historycznych transakcji.
+4. Mierz dwie metryki:
+   - skuteczność (ile poprawnie zapisanych),
+   - false-match (ile zapisanych błędnie).
+5. Jeśli false-match rośnie:
+   - podnieś score/margin,
+   - zwiększ karę invoice near amount,
+   - utrzymaj wymóg TOTAL/PAID i blokadę invoice context.
+
+Zapisywanie ustawień - jak to działa
+------------------------------------
+1. Ustawienia lokalne zapisują się automatycznie do pliku domyślnego aplikacji.
+2. "Zapisz ustawienia jako..." to wyłącznie dodatkowy eksport profilu do osobnego pliku JSON.
+3. "Wczytaj ustawienia..." służy do importu zapisanego wcześniej profilu.
+
+Wersja dokumentu
+----------------
+Opis dotyczy bieżącej wersji aplikacji GETINGE - REMITTANCE ADVICE MATCHER.

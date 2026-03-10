@@ -1,0 +1,62 @@
+{
+  "LanguageCode": "pl",
+  "LookbackDays": 7,
+  "MailboxRootName": "ukremittance",
+  "TargetSubfolderName": "Remittance advices",
+  "SecondMailboxRootName": "AR.UKIE",
+  "Mailboxes": [
+    {
+      "RootName": "ukremittance",
+      "InboxSubfolders": [
+        "Remittance advices"
+      ]
+    },
+    {
+      "RootName": "AR.UKIE",
+      "InboxSubfolders": []
+    }
+  ],
+  "FebanCsvRelativeFolder": "\\!NORTH_DACH\\02_OPERATIONS\\GB02_Getinge_Ltd\\OTC\\Remittance advices\\02. SEB Remittance advices\\Robot\\",
+  "FebanCsvFilename": "transactions.csv",
+  "RemitBaseRelativeFolder": "\\!NORTH_DACH\\02_OPERATIONS\\GB02_Getinge_Ltd\\OTC\\Remittance advices\\02. SEB Remittance advices\\",
+  "EnablePass2SubjectBodyFallback": true,
+  "EnablePass3InlineSaveMsg": true,
+  "EnableProcessedPdfCache": true,
+  "MaxPdfSizeMb": 15,
+  "ScoreMinToSave": 120,
+  "ScoreMarginToSave": 45,
+  "RequireHardSignalOrTwoSignals": true,
+  "RequireCandidateInTotalContext": true,
+  "DoEventsEveryNItems": 20,
+  "InvoiceNumberRegex": "\\b3129\\d{5}\\b",
+  "InvoiceBlockWindowLines": 1,
+  "SingleInvoiceScoreBonus": 20,
+  "SingleInvoiceMarginBonus": 10,
+  "TotalContextWindowChars": 280,
+  "StrongTotalNeighborLines": 1,
+  "TotalKeywordNeighborLines": 1,
+  "AllowLooseDigitsAmountMatch": true,
+  "MinDigitsForLooseMatch": 5,
+  "ScoreStrongTotalWeight": 130,
+  "ScoreTotalContextWeight": 85,
+  "ScoreKeywordWindowWeight": 60,
+  "ScoreLineItemPenaltyWeight": -90,
+  "PreferHardTotalOverHigherScore": true,
+  "BlockInvoiceContextWithoutStrongTotal": true,
+  "StrongTotalKeywords": [
+    "grand total",
+    "amount paid to account",
+    "amount paid",
+    "payment by bacs",
+    "paid by bacs",
+    "bank transfer total"
+  ],
+  "TotalKeywords": [
+    "total",
+    "amount paid",
+    "payment amount",
+    "amount payable",
+    "payment by bacs",
+    "amount paid to account"
+  ]
+}
