@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Globalization;
+using System.Windows;
 using RemittanceMatcherApp.Logging;
 using RemittanceMatcherApp.Models;
 
@@ -127,6 +128,26 @@ public sealed class OutlookRemittanceProcessor
                     progress,
                     logger,
                     cancellationToken);
+            }
+
+            var needsOutlookUserApproval =
+                feban.Count > 0 && (settings.EnablePass2SubjectBodyFallback || settings.EnablePass3InlineSaveMsg);
+            if (needsOutlookUserApproval)
+            {
+                progress?.Report(new ProgressUpdate
+                {
+                    Current = ToUiInProgressCurrent(progressCurrent, totalItems),
+                    Total = Math.Max(1, totalItems),
+                    Status = "Outlook: Czekam na zatwierdzenie przez uzytkownika"
+                });
+
+                logger.Info("Outlook: Czekam na zatwierdzenie przez uzytkownika.");
+
+                MessageBox.Show(
+                    "Outlook wymaga potwierdzenia dostepu.\n\nW oknie Outlook wybierz 'Allow access for 10 minutes' i kliknij 'Allow', aby kontynuowac.",
+                    "Getinge Remittance Matcher",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
             }
 
             if (settings.EnablePass2SubjectBodyFallback && feban.Count > 0)
@@ -322,11 +343,6 @@ public sealed class OutlookRemittanceProcessor
                 catch
                 {
                     stats.PdfSaveFail++;
-                    if (settings.EnableProcessedPdfCache)
-                    {
-                        _cacheService.Update(cache, fingerprint, (DateTime)mi.ReceivedTime, CacheService.StatusRejectSoft, "PDF_SAVE_FAIL");
-                    }
-
                     continue;
                 }
 
@@ -334,11 +350,6 @@ public sealed class OutlookRemittanceProcessor
                 if (new FileInfo(tmpPdf).Length > maxPdfBytes)
                 {
                     stats.Rejected++;
-                    if (settings.EnableProcessedPdfCache)
-                    {
-                        _cacheService.Update(cache, fingerprint, (DateTime)mi.ReceivedTime, CacheService.StatusRejectSoft, "PDF_TOO_LARGE");
-                    }
-
                     SafeDeleteFile(tmpPdf);
                     continue;
                 }
@@ -348,11 +359,6 @@ public sealed class OutlookRemittanceProcessor
                 {
                     stats.PdfOpenFail++;
                     stats.Rejected++;
-                    if (settings.EnableProcessedPdfCache)
-                    {
-                        _cacheService.Update(cache, fingerprint, (DateTime)mi.ReceivedTime, CacheService.StatusRejectSoft, "PDF_TEXT_EMPTY");
-                    }
-
                     SafeDeleteFile(tmpPdf);
                     continue;
                 }
@@ -363,7 +369,7 @@ public sealed class OutlookRemittanceProcessor
 
                 if (match is not null && !string.IsNullOrWhiteSpace(match.Key) && !mailSavedAnyPdf)
                 {
-                    SaveMatchedPdf(tmpPdf, match.Key, feban, remitBasePath);
+                    var savedName = SaveMatchedPdf(tmpPdf, match.Key, feban, remitBasePath);
                     stats.Saved++;
                     savedPdfKeys.Add(pdfKey);
                     savedAnyPdfInMail[(string)mi.EntryID] = true;
@@ -375,16 +381,11 @@ public sealed class OutlookRemittanceProcessor
                         _cacheService.Update(cache, fingerprint, (DateTime)mi.ReceivedTime, CacheService.StatusMatched, match.Reason);
                     }
 
-                    logger.Info($"PDF zapisany: {(string)att.FileName} => {match.Key}");
+                    logger.Info($"Remittance advice zapisana: {savedName}");
                 }
                 else
                 {
                     stats.Rejected++;
-                    var reason = match?.Reason ?? "NO_CANDIDATE";
-                    if (settings.EnableProcessedPdfCache)
-                    {
-                        _cacheService.Update(cache, fingerprint, (DateTime)mi.ReceivedTime, _cacheService.MapStatusFromReason(reason), reason);
-                    }
                 }
 
                 SafeDeleteFile(tmpPdf);
@@ -484,15 +485,10 @@ public sealed class OutlookRemittanceProcessor
                 catch
                 {
                     stats.PdfSaveFail++;
-                    if (settings.EnableProcessedPdfCache)
-                    {
-                        _cacheService.Update(cache, fingerprint, (DateTime)mi.ReceivedTime, CacheService.StatusRejectSoft, "PDF_SAVE_FAIL_P2");
-                    }
-
                     continue;
                 }
 
-                SaveMatchedPdf(tmpPdf, match.Key, feban, remitBasePath);
+                var savedName = SaveMatchedPdf(tmpPdf, match.Key, feban, remitBasePath);
                 stats.Saved++;
                 savedPdfKeys.Add(pdfKey);
                 savedAnyPdfInMail[entryId] = true;
@@ -503,7 +499,7 @@ public sealed class OutlookRemittanceProcessor
                 }
 
                 SafeDeleteFile(tmpPdf);
-                logger.Info($"Pass2 zapisany: {(string)att.FileName} => {match.Key}");
+                logger.Info($"Remittance advice zapisana: {savedName}");
                 break;
             }
         }
@@ -571,7 +567,7 @@ public sealed class OutlookRemittanceProcessor
         }
     }
 
-    private void SaveMatchedPdf(string tmpPdf, string key, Dictionary<string, FebanRecord> feban, string remitBasePath)
+    private string SaveMatchedPdf(string tmpPdf, string key, Dictionary<string, FebanRecord> feban, string remitBasePath)
     {
         var rec = feban[key];
         var outName = $"{rec.DisplayAmount} {_pathResolver.SanitizeFileName(rec.Partner)}.pdf";
@@ -580,6 +576,7 @@ public sealed class OutlookRemittanceProcessor
 
         var fullPath = _pathResolver.GetUniquePath(Path.Combine(saveFolder, outName));
         File.Copy(tmpPdf, fullPath, overwrite: false);
+        return Path.GetFileName(fullPath);
     }
 
 
