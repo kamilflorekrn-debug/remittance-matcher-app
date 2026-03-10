@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Globalization;
 using RemittanceMatcherApp.Logging;
 using RemittanceMatcherApp.Models;
 
@@ -8,6 +9,8 @@ namespace RemittanceMatcherApp.Services;
 
 public sealed class OutlookRemittanceProcessor
 {
+    private const string BuildMarker = "OUTLOOK_DIAG_2026-03-10";
+
     private readonly PathResolverService _pathResolver;
     private readonly CsvService _csvService;
     private readonly CacheService _cacheService;
@@ -33,7 +36,7 @@ public sealed class OutlookRemittanceProcessor
         var stats = new RunStats();
         var processStart = DateTime.Now;
 
-        logger.Info("Rozpoczynam proces.");
+        logger.Info($"Rozpoczynam proces. Wersja diagnostyczna: {BuildMarker}");
 
         var csvPath = _pathResolver.ResolveNetworkPathToFile(settings.FebanCsvRelativeFolder, settings.FebanCsvFilename);
         if (string.IsNullOrWhiteSpace(csvPath) || !File.Exists(csvPath))
@@ -220,6 +223,7 @@ public sealed class OutlookRemittanceProcessor
         items.Sort("[ReceivedTime]", true);
 
         var itemCount = (int)items.Count;
+        logger.Info($"{folderLabel}: elementow po filtrze czasu: {itemCount}");
 
         for (var i = itemCount; i >= 1; i--)
         {
@@ -231,8 +235,7 @@ public sealed class OutlookRemittanceProcessor
             }
 
             dynamic it = items[i];
-            if (!string.Equals((string)it.GetType().Name, "_MailItem", StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals((string)it.GetType().Name, "MailItem", StringComparison.OrdinalIgnoreCase))
+            if (!IsMailItem(it))
             {
                 progressCurrent++;
                 continue;
@@ -258,7 +261,7 @@ public sealed class OutlookRemittanceProcessor
 
                 dynamic att = mi.Attachments.Item(a);
                 var fn = ((string)att.FileName).Trim().ToLowerInvariant();
-                if (!fn.Contains(".pdf", StringComparison.OrdinalIgnoreCase))
+                if (!fn.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }
@@ -636,7 +639,17 @@ public sealed class OutlookRemittanceProcessor
         try
         {
             dynamic root = ns.Folders[mailboxRoot];
-            return root.Folders["Inbox"];
+
+            // Prefer domyslny Inbox dla store (dziala niezaleznie od jezyka Outlooka).
+            try
+            {
+                const int olFolderInbox = 6;
+                return root.Store.GetDefaultFolder(olFolderInbox);
+            }
+            catch
+            {
+                return root.Folders["Inbox"];
+            }
         }
         catch
         {
@@ -680,7 +693,9 @@ public sealed class OutlookRemittanceProcessor
 
     private static string BuildReceivedTimeRestrict(DateTime dtFrom)
     {
-        return $"[ReceivedTime] >= '{dtFrom:g}'";
+        // Outlook Restrict oczekuje formatu US daty/czasu niezaleznie od lokalizacji systemu.
+        var filterDate = dtFrom.ToString("MM/dd/yyyy hh:mm tt", CultureInfo.GetCultureInfo("en-US"));
+        return $"[ReceivedTime] >= '{filterDate}'";
     }
 
     private static string BuildPdfFingerprint(dynamic mailItem, dynamic att)
@@ -699,6 +714,29 @@ public sealed class OutlookRemittanceProcessor
         var size = (int)att.Size;
         var received = (DateTime)mailItem.ReceivedTime;
         return $"{storeId}|{(string)mailItem.EntryID}|{fileName}|{size}|{received:yyyyMMddHHmmss}".ToLowerInvariant();
+    }
+
+    private static bool IsMailItem(dynamic item)
+    {
+        try
+        {
+            const int olMail = 43;
+            return (int)item.Class == olMail;
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            var messageClass = (string?)item.MessageClass;
+            return !string.IsNullOrWhiteSpace(messageClass) &&
+                   messageClass.StartsWith("IPM.Note", StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static string GetMailTextPlain(dynamic mailItem)
@@ -754,9 +792,3 @@ public sealed class OutlookRemittanceProcessor
         }
     }
 }
-
-
-
-
-
-
