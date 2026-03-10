@@ -68,6 +68,8 @@ public sealed class OutlookRemittanceProcessor
 
         object? outlookApp = null;
         object? ns = null;
+        var cacheSaved = false;
+        var totalItems = 0;
 
         try
         {
@@ -90,7 +92,7 @@ public sealed class OutlookRemittanceProcessor
             var savedAnyPdfInMail = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
             var savedMsgMail = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            var totalItems = targets.Sum(t => CountMailItems(t.Folder, restrictFilter));
+            totalItems = targets.Sum(t => CountMailItems(t.Folder, restrictFilter));
             var progressCurrent = 0;
             progress?.Report(new ProgressUpdate { Current = 0, Total = Math.Max(1, totalItems), Status = "Skanowanie maili..." });
 
@@ -129,6 +131,13 @@ public sealed class OutlookRemittanceProcessor
 
             if (settings.EnablePass2SubjectBodyFallback && feban.Count > 0)
             {
+                progress?.Report(new ProgressUpdate
+                {
+                    Current = ToUiInProgressCurrent(progressCurrent, totalItems),
+                    Total = Math.Max(1, totalItems),
+                    Status = "PASS2: Subject/Body fallback..."
+                });
+
                 Pass2SubjectBodyFallbackSavePdf(
                     mailsPdfNotSaved,
                     feban,
@@ -144,6 +153,13 @@ public sealed class OutlookRemittanceProcessor
 
             if (settings.EnablePass3InlineSaveMsg && feban.Count > 0)
             {
+                progress?.Report(new ProgressUpdate
+                {
+                    Current = ToUiInProgressCurrent(progressCurrent, totalItems),
+                    Total = Math.Max(1, totalItems),
+                    Status = "PASS3: Inline remittance (.msg)..."
+                });
+
                 Pass3InlineBodySaveMsg(
                     mailsNoPdfCandidates,
                     feban,
@@ -158,6 +174,8 @@ public sealed class OutlookRemittanceProcessor
             if (settings.EnableProcessedPdfCache)
             {
                 _cacheService.Save(cachePath, cache, settings.LookbackDays);
+                cacheSaved = true;
+                logger.Info($"Cache PDF zapisany: {cache.Count} rekordow ({cachePath})");
             }
 
             var elapsed = DateTime.Now - processStart;
@@ -181,6 +199,19 @@ public sealed class OutlookRemittanceProcessor
         }
         finally
         {
+            if (settings.EnableProcessedPdfCache && !cacheSaved)
+            {
+                try
+                {
+                    _cacheService.Save(cachePath, cache, settings.LookbackDays);
+                    logger.Info($"Cache PDF zapisany (finally): {cache.Count} rekordow ({cachePath})");
+                }
+                catch (Exception ex)
+                {
+                    logger.Warn($"Nie udalo sie zapisac cache PDF: {ex.Message}");
+                }
+            }
+
             if (ns is not null)
             {
                 Marshal.FinalReleaseComObject(ns);
@@ -246,7 +277,7 @@ public sealed class OutlookRemittanceProcessor
             progressCurrent++;
             progress?.Report(new ProgressUpdate
             {
-                Current = Math.Min(progressCurrent, Math.Max(1, progressTotal)),
+                Current = ToUiInProgressCurrent(progressCurrent, progressTotal),
                 Total = Math.Max(1, progressTotal),
                 Status = $"{folderLabel}: {stats.Checked} maili sprawdzonych"
             });
@@ -261,7 +292,7 @@ public sealed class OutlookRemittanceProcessor
 
                 dynamic att = mi.Attachments.Item(a);
                 var fn = ((string)att.FileName).Trim().ToLowerInvariant();
-                if (!fn.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+                if (!fn.Contains(".pdf", StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }
@@ -410,6 +441,14 @@ public sealed class OutlookRemittanceProcessor
             }
 
             var mailText = Nz((string?)mi.Subject) + "\r\n" + GetMailTextPlain(mi);
+            var ovf = stats.OverflowSkips;
+            var match = _matchingService.FindBestValidatedMatch(mailText, feban, settings, ref ovf);
+            stats.OverflowSkips = ovf;
+
+            if (match is null || string.IsNullOrWhiteSpace(match.Key))
+            {
+                continue;
+            }
 
             var attCount = (int)mi.Attachments.Count;
             for (var a = 1; a <= attCount; a++)
@@ -453,38 +492,6 @@ public sealed class OutlookRemittanceProcessor
                     continue;
                 }
 
-                var pdfText = _pdfExtractor.ExtractPdfTextViaWord(tmpPdf);
-                if (pdfText.Length == 0)
-                {
-                    stats.PdfOpenFail++;
-                    stats.Rejected++;
-                    if (settings.EnableProcessedPdfCache)
-                    {
-                        _cacheService.Update(cache, fingerprint, (DateTime)mi.ReceivedTime, CacheService.StatusRejectSoft, "PDF_TEXT_EMPTY_P2");
-                    }
-
-                    SafeDeleteFile(tmpPdf);
-                    continue;
-                }
-
-                var combined = mailText + "\r\n" + pdfText;
-                var ovf = stats.OverflowSkips;
-                var match = _matchingService.FindBestValidatedMatch(combined, feban, settings, ref ovf);
-                stats.OverflowSkips = ovf;
-
-                if (match is null || string.IsNullOrWhiteSpace(match.Key))
-                {
-                    stats.Rejected++;
-                    var reason = match?.Reason ?? "NO_CANDIDATE_P2";
-                    if (settings.EnableProcessedPdfCache)
-                    {
-                        _cacheService.Update(cache, fingerprint, (DateTime)mi.ReceivedTime, _cacheService.MapStatusFromReason(reason), reason);
-                    }
-
-                    SafeDeleteFile(tmpPdf);
-                    continue;
-                }
-
                 SaveMatchedPdf(tmpPdf, match.Key, feban, remitBasePath);
                 stats.Saved++;
                 savedPdfKeys.Add(pdfKey);
@@ -492,7 +499,7 @@ public sealed class OutlookRemittanceProcessor
                 feban.Remove(match.Key);
                 if (settings.EnableProcessedPdfCache)
                 {
-                    _cacheService.Update(cache, fingerprint, (DateTime)mi.ReceivedTime, CacheService.StatusMatched, match.Reason);
+                    _cacheService.Update(cache, fingerprint, (DateTime)mi.ReceivedTime, CacheService.StatusMatched, "PASS2_SUBJECT_BODY");
                 }
 
                 SafeDeleteFile(tmpPdf);
@@ -532,7 +539,11 @@ public sealed class OutlookRemittanceProcessor
 
             if (!_matchingService.LooksLikeInlineRemittance(bodyText, subj))
             {
-                continue;
+                var maybeAmountsText = subj + "\r\n" + bodyText;
+                if (!HasAnyAmountCandidate(maybeAmountsText))
+                {
+                    continue;
+                }
             }
 
             var text = subj + "\r\n" + bodyText;
@@ -569,6 +580,25 @@ public sealed class OutlookRemittanceProcessor
 
         var fullPath = _pathResolver.GetUniquePath(Path.Combine(saveFolder, outName));
         File.Copy(tmpPdf, fullPath, overwrite: false);
+    }
+
+
+    private static int ToUiInProgressCurrent(int current, int total)
+    {
+        var totalSafe = Math.Max(1, total);
+        var reservedForFinalize = totalSafe > 1 ? 1 : 0;
+        var maxBeforeDone = Math.Max(0, totalSafe - reservedForFinalize);
+        return Math.Min(Math.Max(0, current), maxBeforeDone);
+    }
+
+    private static bool HasAnyAmountCandidate(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return false;
+        }
+
+        return Regex.IsMatch(text, @"\d(?:[\d\.,\s]){0,20}[\.,]\s*\d{2}", RegexOptions.CultureInvariant);
     }
 
     private static object GetOutlookApplication()
@@ -693,8 +723,9 @@ public sealed class OutlookRemittanceProcessor
 
     private static string BuildReceivedTimeRestrict(DateTime dtFrom)
     {
-        // Outlook Restrict oczekuje formatu US daty/czasu niezaleznie od lokalizacji systemu.
-        var filterDate = dtFrom.ToString("MM/dd/yyyy hh:mm tt", CultureInfo.GetCultureInfo("en-US"));
+        // Zblizone do VBA Format$(dtFrom, "ddddd h:nn AMPM") uzywanego w oryginalnym makrze.
+        var culture = CultureInfo.CurrentCulture;
+        var filterDate = dtFrom.ToString($"{culture.DateTimeFormat.ShortDatePattern} h:mm tt", culture);
         return $"[ReceivedTime] >= '{filterDate}'";
     }
 
